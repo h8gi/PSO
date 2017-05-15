@@ -57,5 +57,19 @@ function update!(S::Swarm)
     end
 end
 
-img = load("hoge.png")
+ 
 
+
+function generate()
+    Particle()
+end
+
+swm = Swarm(100,
+            ()->Particle(randn(5), randn(5)),
+            (x)->sum(abs(x-[1,2,3,4,5])))
+
+
+brain = load("brain.png")
+canvas, _ = imshow(brain)
+imshow(canvas, brain .> mean(brain))
+save("bin.png", Gray.(brain .> mean(brain)))
