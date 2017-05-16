@@ -1,4 +1,4 @@
-# using Images
+using Images, Distances
 import Base.size
 
 type Particle
@@ -57,19 +57,57 @@ function update!(S::Swarm)
     end
 end
 
- 
+function dmin(x)
+    d = pairwise(Euclidean(), x')
+    cmax, rmax = size(d)
+    (d[c, r] for c in 1:cmax for r in (c+1):rmax) |> minimum
+end
 
+function minpos(x,fun)
+    findfirst(sortperm(x, by=fun), 1)
+end
+
+function classify(x, image)
+    cls = zeros(Int, size(image))
+    for i in 1:length(image)
+        cls[i] = minpos(x, (m)->(euclidean(m, image[i])))
+    end
+    return cls
+end
+
+function dmax(x, image)
+    cls = classify(x, image)
+    Nc = size(x, 1)
+    result = zeros(x)
+    for c in 1:Nc
+        pixels = image[cls .== c]
+        result[c] = ((euclidean(x[c], p) for p in pixels) |> sum) / size(pixels, 1)
+    end
+    return maximum(result)
+end
+
+function f(x, image, w1=0.5, w2=0.5)
+    w1 * dmax(x, image) + w2 * (maximum(image) - dmin(x))
+end
 
 function generate()
     Particle()
 end
 
-swm = Swarm(100,
-            ()->Particle(randn(5), randn(5)),
-            (x)->sum(abs(x-[1,2,3,4,5])))
 
 
+Nb = 1
+Nc = 5
 brain = load("brain.png")
-canvas, _ = imshow(brain)
-imshow(canvas, brain .> mean(brain))
-save("bin.png", Gray.(brain .> mean(brain)))
+img = Float64.(brain)
+Swarm(10, ()->Particle(rand(Nc), rand(Nc)), (x)->f(x, img))
+
+
+
+
+# canvas, _ = imshow(brain)
+# imshow(canvas, brain .> mean(brain))
+# save("bin.png", Gray.(brain .> mean(brain)))
+
+# cls = classify(collect(0:0.1:1), brain)
+# imshow(c, scaleminmax(1,11)(cls) )
